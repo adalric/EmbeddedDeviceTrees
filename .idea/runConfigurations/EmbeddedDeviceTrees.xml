@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="EmbeddedDeviceTrees" type="AppleRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-d $USER_HOME$/Downloads/iPhone_5.5_P3_13.4.1_17E262_Restore/Firmware/all_flash/DeviceTree.d211ap.im4p" REDIRECT_INPUT="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="EmbeddedDeviceTrees" TARGET_NAME="EmbeddedDeviceTrees" CONFIG_NAME="Debug" SCHEME_NAME="EmbeddedDeviceTrees" IS_LOCATION_SIMULATION_ALLOWED="true" APPLICATION_LANGUAGE="IDELaunchSchemeLanguageUseSystemLanguage" APPLICATION_REGION="" RUN_TARGET_PROJECT_NAME="EmbeddedDeviceTrees" RUN_TARGET_NAME="EmbeddedDeviceTrees" MAKE_ACTIVE="TRUE" SHOULD_DEBUG_EXTENSIONS="false">
+    <EXTENSION ID="org.jetbrains.appcode.reveal.RevealRunConfigurationExtension">
+      <REVEAL_SETTINGS autoInject="false" autoInstall="true" askToEnableAutoInstall="true" />
+    </EXTENSION>
+    <embedded_app_extension_list />
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>
