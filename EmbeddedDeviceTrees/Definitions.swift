@@ -21,6 +21,7 @@ struct DeviceTreeNodeProperty {
     var name: [UInt8]
     var length: UInt32
     var value: [UInt8]
+    var isPlaceholder: Bool
 
     func getSize() -> Int {
         return name.count + 4 + Int(length)

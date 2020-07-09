@@ -97,12 +97,13 @@ func main(args: [String]){
         let cs = (INAME as NSString).utf8String
         var buffer = UnsafePointer<Int8>(cs)
         var size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
-        var type: UnsafeMutablePointer<Int8>? = UnsafeMutablePointer<Int8>.allocate(capacity: 5)
+        var type = UnsafeMutablePointer<UInt32>.allocate(capacity: 32)
         var build: UnsafeMutablePointer<Int8>? = UnsafeMutablePointer<Int8>.allocate(capacity: 64)
-        var str = read_from_file(buffer, size, type, build)
+        build!.assign(repeating: 0, count: 64)
+        var str = read_from_file(buffer, size, type, &build)
         let array = Array(UnsafeBufferPointer(start: str, count: size.pointee))
+        fputs("\u{001B}[0;31m\(String(cString: build!)) - \(UInt32toSting(integer: type.pointee))\u{001B}[0;0m\n", stderr)
         print("{\(string(node: parseDeviceTree(data: array)))}".data(using: .utf8)!.prettyPrintedJSONString!)
-        
     }
     
 //

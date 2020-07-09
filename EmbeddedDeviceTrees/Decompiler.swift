@@ -10,6 +10,7 @@ import Foundation
 
 func parseProperty(data bytes:[UInt8], offset: Int) -> DeviceTreeNodeProperty {
     let name = readkPropName(bytes: bytes, offset: offset)
+    let isPlaceholder = (read32(bytes: bytes, offset: offset+kPropNameLength) & (1 << 31)) != 0
     let length = ((read32(bytes: bytes, offset: offset+kPropNameLength) & 0x7fffffff) + 0x3) & ~0x3
     let valueStart:Int = offset + kPropNameLength + 4
     var valueEnd:Int = Int(offset) + Int(length) + kPropNameLength + 3
@@ -17,7 +18,7 @@ func parseProperty(data bytes:[UInt8], offset: Int) -> DeviceTreeNodeProperty {
         valueEnd = valueStart
     }
     let value = Array(bytes[valueStart...valueEnd])
-    return DeviceTreeNodeProperty(name: name, length: length, value: value)
+    return DeviceTreeNodeProperty(name: name, length: length, value: value, isPlaceholder: isPlaceholder)
 }
 
 func parseNode(data bytes:[UInt8], offset: Int) -> DeviceTreeNode {
@@ -70,42 +71,48 @@ func value(forProperty property: DeviceTreeNodeProperty, name: String) -> String
         }
         """
     }
-    if name != "reg" {
-    
-        let (strArr, isstr) = stringsFromProperty(property: property)
-        if isstr && strArr.count != 0 && strArr[0].count != 1 {
-            if strArr.count != 1 {
-                return """
+    let (strArr, isstr) = stringsFromProperty(property: property)
+    if isstr && strArr.count != 0 && strArr[0].count != 1 {
+        if strArr.count != 1 {
+            return """
+            {
+                "size": "\(property.length)",
+                "value": \(strArr.description)
+            }
+            """
+        }
+        if property.isPlaceholder {
+            return """
                 {
                     "size": "\(property.length)",
-                    "value": \(strArr.description)
+                    "placeholder": "\(strArr[0])",
                 }
                 """
-            }
-            return """
+        } else {
+        return """
             {
                 "size": "\(property.length)",
                 "value": "\(strArr[0])"
             }
             """
         }
-        if property.length == 4 {
-            return """
-            {
-                "size": "\(property.length)",
-                "value": "\(read32(bytes: property.value, offset: 0))"
-            }
-            """
-            //"0x" + property.value.reversed().hexa.lowercased()
+    }
+    if property.length == 4 {
+        return """
+        {
+            "size": "\(property.length)",
+            "value": "\(read32(bytes: property.value, offset: 0))"
         }
-        if property.length == 8 {
-            return """
-            {
-                "size": "\(property.length)",
-                "value": "\(read64(bytes: property.value, offset: 0))"
-            }
-            """
+        """
+        //"0x" + property.value.reversed().hexa.lowercased()
+    }
+    if property.length == 8 {
+        return """
+        {
+            "size": "\(property.length)",
+            "value": "\(read64(bytes: property.value, offset: 0))"
         }
+        """
     }
     return """
     {
@@ -144,7 +151,7 @@ func string(node: DeviceTreeNode) -> String{
             nodeName = stringsFromProperty(property: property).0[0]
         } else {
             let propertyValue = value(forProperty: property, name: propName)
-            str += "\"\(propName)\": \(propertyValue),\n"
+            str += "\"\(propName)\": " + propertyValue + ",\n"
         }
     }
     if node.children.count != 0 {

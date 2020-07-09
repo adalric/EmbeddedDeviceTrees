@@ -17,10 +17,10 @@ extension String {
 }
 
 extension Data {
-    var prettyPrintedJSONString: NSString? { /// NSString gives us a nice sanitized debugDescription
+    var prettyPrintedJSONString: String? { /// NSString gives us a nice sanitized debugDescription
         guard let object = try? JSONSerialization.jsonObject(with: self, options: []),
-              let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
-              let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
+            let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .withoutEscapingSlashes]),
+              let prettyPrintedString = String(data: data, encoding: .ascii) else { return nil }
 
         return prettyPrintedString
     }
@@ -32,6 +32,22 @@ extension Collection where Iterator.Element == UInt8 {
     }
     var hexa: String {
         return map{ String(format: "%02X", $0) }.joined()
+    }
+}
+
+func UInt32toSting(integer: UInt32) -> String {
+    var bigEndian = integer.bigEndian
+    let count = MemoryLayout<UInt32>.size
+    let bytePtr = withUnsafePointer(to: &bigEndian) {
+        $0.withMemoryRebound(to: UInt8.self, capacity: count) {
+            UnsafeBufferPointer(start: $0, count: count)
+        }
+    }
+    let bytes = Array(bytePtr)
+    if let string = String(bytes: bytes, encoding: .utf8) {
+        return string
+    } else {
+        return ""
     }
 }
 

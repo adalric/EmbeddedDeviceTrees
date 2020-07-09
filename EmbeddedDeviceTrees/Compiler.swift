@@ -54,7 +54,7 @@ func parseDeviceTreeNodeProperty(json: (key: String, value: JSON))  -> DeviceTre
         value = json.value.stringValue.hexaBytes.reversed()
     }
     let lenght = UInt32(value.count)
-    return DeviceTreeNodeProperty(name: Array(name.utf8), length: lenght, value: value)
+    return DeviceTreeNodeProperty(name: Array(name.utf8), length: lenght, value: value, isPlaceholder: false)
 }
 
 func parseDeviceTreeNode(json: JSON) -> DeviceTreeNode{
@@ -63,7 +63,7 @@ func parseDeviceTreeNode(json: JSON) -> DeviceTreeNode{
     var props = [DeviceTreeNodeProperty]()
     var children = [DeviceTreeNode]()
     if nChildren > 0 {
-        var childrenArray = propertiesArray.removeValue(forKey: "contents")!
+        let childrenArray = propertiesArray.removeValue(forKey: "contents")!
         for c in 0..<nChildren {
             children.append(parseDeviceTreeNode(json: childrenArray[c]))
         }
@@ -80,7 +80,6 @@ func parseDeviceTreeNode(json: JSON) -> DeviceTreeNode{
 func compileDeviceTree(fromJSON json: String) -> [UInt8] {
     do{
         let dtjson = try JSON(data: (json.filter({ $0 != Character(UnicodeScalar(0)!) }).data(using: .utf8)!))
-        let DTRoot = parseDeviceTreeNode(json: dtjson)
         return binaryValue(forNode: parseDeviceTreeNode(json: dtjson))
     } catch let error as NSError {
         print("Couldnt read JSON")

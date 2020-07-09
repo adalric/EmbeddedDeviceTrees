@@ -11,6 +11,6 @@
 
 #include <libvfs/vfs.h>
 
-uint8_t* read_from_file(const char* filename, size_t* size, char* typeImg4, char* buildInfo);
+uint8_t* read_from_file(const char* filename, size_t* size, unsigned* typeImg4, char** buildInfo);
 
 #endif /* CUtils_h */
