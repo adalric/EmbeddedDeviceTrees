@@ -13,4 +13,6 @@
 
 uint8_t* read_from_file(const char* filename, size_t* size, unsigned* typeImg4, char** buildInfo);
 
+uint8_t* getIM4P(uint8_t* binArray, size_t binArraySize, size_t* outSize);
+
 #endif /* CUtils_h */

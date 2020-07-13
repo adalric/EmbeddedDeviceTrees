@@ -6,6 +6,24 @@
 //  Copyright © 2018 UAZ. All rights reserved.
 //
 
+
+/* Replaces placeholder values during deserialization. The placeholders are normal strings,
+* but the size field has bit 31 set to indicate it's a placeholder. If iBoot successfully
+* finds the requested data, it replaces the placeholder value with the requested data
+* (and sets bit 31 of the size back to 0). If iBoot doesn't find the requested data,
+* it removes the property from the device tree.
+*
+* Two kinds of placeholders are currently supported:
+*      syscfg/<SKey>       - looks up the key 'SKey' in syscfg
+*      syscfg/<SKey>/<len> - looks up the key 'SKey' in syscfg, and pads/truncates to specified
+*                          length (for compatibility with old-style devicetree placeholders)
+*      macaddr/<envname>   - looks up the mac address envname in the environment using env_get_ethaddr
+*      zeroes/<bytes>      - creates a property with bytes zero bytes
+*
+* Multiple placeholders can be specified, with options separated by commas. The first
+* placeholder found is used.
+*/
+
 import Foundation
 
 func parseProperty(data bytes:[UInt8], offset: Int) -> DeviceTreeNodeProperty {

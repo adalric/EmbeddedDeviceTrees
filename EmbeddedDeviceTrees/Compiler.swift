@@ -31,8 +31,14 @@ func binaryValue(forNodes children: [DeviceTreeNode]) -> [UInt8] {
 
 func binaryValue(forProperty property: DeviceTreeNodeProperty) -> [UInt8] {
     let namePadded = extendArray(array: property.name, newSize: 32)
-    let lengthArr = split32(bytes: (property.length + 3) & ~0x03)
-    let valuePadded = extendArray(array: property.value, newSize: Int(read32(bytes: lengthArr, offset: 0)))
+    var length: UInt32 = 0
+    if property.isPlaceholder {
+        length = property.length | 1 << 31;
+    } else {
+        length = property.length
+    }
+    let lengthArr = split32(bytes: (length + 3) & ~0x03)
+    let valuePadded = extendArray(array: property.value, newSize: Int(property.length))
     return namePadded + lengthArr + valuePadded
 }
 
@@ -40,32 +46,43 @@ func parseDeviceTreeNodeProperty(json: (key: String, value: JSON))  -> DeviceTre
     var name = ""
     var value = [UInt8]()
     name = json.key
-    if json.value.stringValue.starts(with: "0x") {
-        value = String(json.value.stringValue.dropFirst().dropFirst()).hexaBytes.reversed()
-    } else if json.value.string != nil {
-        value = Array(json.value.stringValue.utf8)
+    let contents = json.value.dictionary!
+    var isPlaceholder = false
+    var size: UInt32 = 0
+    size = UInt32(contents["size"]!.string!)!
+    var valueContent = JSON()
+    if contents.keys.contains("placeholder") {
+        isPlaceholder = true
+        valueContent = contents["placeholder"]!
+    } else {
+        valueContent = contents["value"]!
+    }
+
+    if valueContent.stringValue.starts(with: "0x") {
+        value = String(valueContent.stringValue.dropFirst().dropFirst()).hexaBytes.reversed()
+    } else if valueContent.string != nil {
+        value = Array(valueContent.stringValue.utf8)
         value.append(0)
-    } else if json.value.arrayObject != nil {
-        for str in json.value.arrayObject! {
+    } else if valueContent.arrayObject != nil {
+        for str in valueContent.arrayObject! {
             value.append(contentsOf: Array((str as! String).utf8))
             value.append(0)
         }
     } else {
-        value = json.value.stringValue.hexaBytes.reversed()
+        value = valueContent.stringValue.hexaBytes.reversed()
     }
-    let lenght = UInt32(value.count)
-    return DeviceTreeNodeProperty(name: Array(name.utf8), length: lenght, value: value, isPlaceholder: false)
+    return DeviceTreeNodeProperty(name: Array(name.utf8), length: size, value: value, isPlaceholder: isPlaceholder)
 }
 
-func parseDeviceTreeNode(json: JSON) -> DeviceTreeNode{
-    let nChildren = json["contents"].count
-    var propertiesArray = json.dictionary!
+func parseDeviceTreeNode(json: (key: String, value: JSON)) -> DeviceTreeNode{
+    let nChildren = json.value["children"].count
+    var propertiesArray = json.value.dictionary!
     var props = [DeviceTreeNodeProperty]()
     var children = [DeviceTreeNode]()
     if nChildren > 0 {
-        let childrenArray = propertiesArray.removeValue(forKey: "contents")!
+        var childrenArray = propertiesArray.removeValue(forKey: "children")!.dictionary!
         for c in 0..<nChildren {
-            children.append(parseDeviceTreeNode(json: childrenArray[c]))
+            children.append(parseDeviceTreeNode(json: childrenArray.popFirst()!))
         }
     }
     let nProperties = propertiesArray.count
@@ -80,7 +97,9 @@ func parseDeviceTreeNode(json: JSON) -> DeviceTreeNode{
 func compileDeviceTree(fromJSON json: String) -> [UInt8] {
     do{
         let dtjson = try JSON(data: (json.filter({ $0 != Character(UnicodeScalar(0)!) }).data(using: .utf8)!))
-        return binaryValue(forNode: parseDeviceTreeNode(json: dtjson))
+        let dtName = Array(dtjson.dictionary!.keys)[0]
+        let treeNode = parseDeviceTreeNode(json: (key: dtName, value: dtjson[dtName]))
+        return binaryValue(forNode: treeNode)
     } catch let error as NSError {
         print("Couldnt read JSON")
         print(error)

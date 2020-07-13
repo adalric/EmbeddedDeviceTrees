@@ -87,24 +87,47 @@ func main(args: [String]){
         }
     }
     
-    if (!ENCODE_FLAG && !DECODE_FLAG) || (ENCODE_FLAG && DECODE_FLAG) {
+    if (!ENCODE_FLAG && !DECODE_FLAG) || (ENCODE_FLAG && DECODE_FLAG) || (!checkFileExists(file: INAME)) {
         print("Invalid operation.")
         printHelpMenu()
+        exit(2)
     }
     
+    var JSON_REPRESENTATION = ""
     
-    if DECODE_FLAG {
+    if DECODE_FLAG{
         let cs = (INAME as NSString).utf8String
-        var buffer = UnsafePointer<Int8>(cs)
-        var size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
-        var type = UnsafeMutablePointer<UInt32>.allocate(capacity: 32)
+        let buffer = UnsafePointer<Int8>(cs)
+        let size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
+        let type = UnsafeMutablePointer<UInt32>.allocate(capacity: 32)
         var build: UnsafeMutablePointer<Int8>? = UnsafeMutablePointer<Int8>.allocate(capacity: 64)
         build!.assign(repeating: 0, count: 64)
-        var str = read_from_file(buffer, size, type, &build)
+        let str = read_from_file(buffer, size, type, &build)
         let array = Array(UnsafeBufferPointer(start: str, count: size.pointee))
         fputs("\u{001B}[0;31m\(String(cString: build!)) - \(UInt32toSting(integer: type.pointee))\u{001B}[0;0m\n", stderr)
-        print("{\(string(node: parseDeviceTree(data: array)))}".data(using: .utf8)!.prettyPrintedJSONString!)
+        JSON_REPRESENTATION = "{\(string(node: parseDeviceTree(data: array)))}".data(using: .utf8)!.prettyPrintedJSONString!
+        if WRITE_FLAG {
+            writeFile(toFile: ONAME, data: JSON_REPRESENTATION)
+        } else {
+            print(JSON_REPRESENTATION)
+        }
+    } else if ENCODE_FLAG {
+        do{
+            let binaryTree = try compileDeviceTree(fromJSON: String(contentsOfFile: INAME))
+            let size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
+            let pointer = UnsafeMutablePointer<UInt8>(mutating: binaryTree)
+            let imgdat = getIM4P(pointer, binaryTree.count, size)
+            if WRITE_FLAG {
+//                try data.write(to: URL(fileURLWithPath: ONAME))
+            } else {
+                print("Cannot write to STDOUT.")
+                exit(3)
+            }
+        }catch {
+            print("Error opening file")
+        }
     }
+    
     
 //
 //    if !valid {
@@ -116,7 +139,7 @@ func main(args: [String]){
     
 //    if args[1] == "decompile" {
 //        print("Decompiling")
-//        writeFile(toFile: args[3], data: string(node: parseDeviceTree(data: readBinary(fromFile: args[2])), 0) + "\n")
+//
 //    } else if args[1] == "compile" {
 //        do{
 //            print("Compiling")

@@ -35,6 +35,15 @@ extension Collection where Iterator.Element == UInt8 {
     }
 }
 
+let fileManager = FileManager.default
+
+func checkFileExists(file: String) -> Bool {
+    if fileManager.fileExists(atPath: file){
+        return true
+    }
+    return false
+}
+
 func UInt32toSting(integer: UInt32) -> String {
     var bigEndian = integer.bigEndian
     let count = MemoryLayout<UInt32>.size
