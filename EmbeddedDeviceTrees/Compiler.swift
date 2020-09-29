@@ -3,7 +3,7 @@
 //  dtc
 //
 //  Created by Alexander Bradley on 8/24/18.
-//  Copyright © 2018 UAZ. All rights reserved.
+//  Copyright © 2018 Alexander Bradley. All rights reserved.
 //
 
 import Foundation
@@ -85,7 +85,7 @@ func parseDeviceTreeNodeProperty(json: (key: String, value: JSON))  -> DeviceTre
     } else {
         value = valueContent.stringValue.hexaBytes.reversed()
     }
-    
+
     if Int(contents["size"]!.string!)! != (value.count) && Int(contents["size"]!.string!)! < (value.count + padding) && contents["size"]!.string! != "0" {
         print("Warning: Size (\(contents["size"]!.string!)) for property \(name) is not enough to fit value (\(valueContent.stringValue)). Increasing to \(value.count + 2)")
         size = UInt32(value.count + 2)

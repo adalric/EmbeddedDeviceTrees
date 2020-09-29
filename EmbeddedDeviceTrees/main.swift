@@ -3,7 +3,7 @@
 //  dtc
 //
 //  Created by Alexander Bradley on 8/23/18.
-//  Copyright © 2018 UAZ. All rights reserved.
+//  Copyright © 2018 Alexander Bradley. All rights reserved.
 //
 
 import Foundation
@@ -46,14 +46,14 @@ func printHelpMenu(){
 
 func main(args: [String]){
     PROGRAM_NAME = (args[0] as NSString).lastPathComponent
-    
+
     var DECODE_FLAG = false
     var ENCODE_FLAG = false
     var WRITE_FLAG  = false
     var INAME: String = ""
     var ONAME: String = ""
     var IM4P_IN = false
-    
+
     for i in 1..<args.count {
         switch args[i] {
         case "-h", "--help":
@@ -94,15 +94,15 @@ func main(args: [String]){
             continue
         }
     }
-    
+
     if (!ENCODE_FLAG && !DECODE_FLAG) || (ENCODE_FLAG && DECODE_FLAG) || (!checkFileExists(file: INAME)) {
         print("Invalid operation.")
         printHelpMenu()
         exit(2)
     }
-    
+
     var JSON_REPRESENTATION = ""
-    
+
     if DECODE_FLAG{
         if IM4P_IN{
             let cs = (INAME as NSString).utf8String
@@ -119,7 +119,7 @@ func main(args: [String]){
             JSON_REPRESENTATION = "{\(string(node: parseDeviceTree(data: readBinary(fromFile: INAME))))}".data(using: .utf8)!.prettyPrintedJSONString!
         }
         if WRITE_FLAG {
-            writeFile(toFile: ONAME, data: JSON_REPRESENTATION) 
+            writeFile(toFile: ONAME, data: JSON_REPRESENTATION)
         } else {
             print(JSON_REPRESENTATION)
         }
@@ -141,16 +141,16 @@ func main(args: [String]){
             print("Error opening file")
         }
     }
-    
-    
+
+
 //
 //    if !valid {
 //        print("Invalid option.")
 //        printHelpMenu()
 //    }
-    
-    
-    
+
+
+
 //    if args[1] == "decompile" {
 //        print("Decompiling")
 //

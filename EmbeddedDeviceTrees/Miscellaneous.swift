@@ -3,7 +3,7 @@
 //  dtc
 //
 //  Created by Alexander Bradley on 8/24/18.
-//  Copyright © 2018 UAZ. All rights reserved.
+//  Copyright © 2018 Alexander Bradley. All rights reserved.
 //
 
 import Foundation
