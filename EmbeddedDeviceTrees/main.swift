@@ -37,7 +37,7 @@ func printHelpMenu(){
 
     Options:
       -h, --help\t\t\tShows this menu
-      -d, --decode  PATH\tDecode Device Tree in IM4P format
+      -d, --decode  PATH bin|im4p\tDecode Device Tree in IM4P format
       -e, --encode  PATH\tEncode Device Tree in IM4P format
       -o, --out\t\t\tPath to write output
     """
@@ -52,6 +52,7 @@ func main(args: [String]){
     var WRITE_FLAG  = false
     var INAME: String = ""
     var ONAME: String = ""
+    var IM4P_IN = false
     
     for i in 1..<args.count {
         switch args[i] {
@@ -60,12 +61,19 @@ func main(args: [String]){
             return
         case "-d", "--decode":
             DECODE_FLAG = true
-            if i+1 >= args.count {
-                print("Missing PATH.")
+            if i+2 >= args.count {
+                print("Missing arguments.")
                 printHelpMenu()
                 exit(1)
             }
             INAME = args[i+1]
+            if args[i+2] == "bin" {} else if args[i+2] == "im4p"{
+                IM4P_IN = true
+            } else {
+                print("Decode can be done from IM4P or Binary files.")
+                printHelpMenu()
+                exit(1)
+            }
         case "-e", "--encode":
             ENCODE_FLAG = true
             if i+1 >= args.count {
@@ -96,29 +104,35 @@ func main(args: [String]){
     var JSON_REPRESENTATION = ""
     
     if DECODE_FLAG{
-        let cs = (INAME as NSString).utf8String
-        let buffer = UnsafePointer<Int8>(cs)
-        let size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
-        let type = UnsafeMutablePointer<UInt32>.allocate(capacity: 32)
-        var build: UnsafeMutablePointer<Int8>? = UnsafeMutablePointer<Int8>.allocate(capacity: 64)
-        build!.assign(repeating: 0, count: 64)
-        let str = read_from_file(buffer, size, type, &build)
-        let array = Array(UnsafeBufferPointer(start: str, count: size.pointee))
-        fputs("\u{001B}[0;31m\(String(cString: build!)) - \(UInt32toSting(integer: type.pointee))\u{001B}[0;0m\n", stderr)
-        JSON_REPRESENTATION = "{\(string(node: parseDeviceTree(data: array)))}".data(using: .utf8)!.prettyPrintedJSONString!
+        if IM4P_IN{
+            let cs = (INAME as NSString).utf8String
+            let buffer = UnsafePointer<Int8>(cs)
+            let size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
+            let type = UnsafeMutablePointer<UInt32>.allocate(capacity: 32)
+            var build: UnsafeMutablePointer<Int8>? = UnsafeMutablePointer<Int8>.allocate(capacity: 64)
+            build!.assign(repeating: 0, count: 64)
+            let str = read_from_file(buffer, size, type, &build)
+            let array = Array(UnsafeBufferPointer(start: str, count: size.pointee))
+            fputs("\u{001B}[0;31m\(String(cString: build!)) - \(UInt32toSting(integer: type.pointee))\u{001B}[0;0m\n", stderr)
+            JSON_REPRESENTATION = "{\(string(node: parseDeviceTree(data: array)))}".data(using: .utf8)!.prettyPrintedJSONString!
+        } else {
+            JSON_REPRESENTATION = "{\(string(node: parseDeviceTree(data: readBinary(fromFile: INAME))))}".data(using: .utf8)!.prettyPrintedJSONString!
+        }
         if WRITE_FLAG {
-            writeFile(toFile: ONAME, data: JSON_REPRESENTATION)
+            writeFile(toFile: ONAME, data: JSON_REPRESENTATION) 
         } else {
             print(JSON_REPRESENTATION)
         }
     } else if ENCODE_FLAG {
         do{
             let binaryTree = try compileDeviceTree(fromJSON: String(contentsOfFile: INAME))
-            let size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
-            let pointer = UnsafeMutablePointer<UInt8>(mutating: binaryTree)
-            let imgdat = getIM4P(pointer, binaryTree.count, size)
+//            let size = UnsafeMutablePointer<Int>.allocate(capacity: 64)
+//            let pointer = UnsafeMutablePointer<UInt8>(mutating: binaryTree)
+//            let imgdat = getIM4P(pointer, binaryTree.count, size)
             if WRITE_FLAG {
-//                try data.write(to: URL(fileURLWithPath: ONAME))
+//                let pointerCompiled = UnsafeBufferPointer(start: pointer, count: size.pointee)
+                let data = Data(binaryTree)
+                try! data.write(to: URL(fileURLWithPath: ONAME))
             } else {
                 print("Cannot write to STDOUT.")
                 exit(3)

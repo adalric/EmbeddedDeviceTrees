@@ -33,18 +33,31 @@ uint8_t* read_from_file(const char* filename, size_t* size, unsigned* typeImg4, 
     }
 }
 
+
 uint8_t* getIM4P(uint8_t* binArray, size_t binArraySize, size_t* outSize){
-    char base[50] = { 0x30, 0x30, 0x16, 0x04, 0x49, 0x4D, 0x34, 0x50, 0x16, 0x04, 0x64, 0x74, 0x72, 0x65, 0x16, 0x20, 0x45, 0x6D, 0x62, 0x65, 0x64, 0x64, 0x65, 0x64, 0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x54, 0x72, 0x65, 0x65, 0x73, 0x2D, 0x34, 0x38, 0x31, 0x31, 0x2E, 0x31, 0x30, 0x30, 0x2E, 0x32, 0x36, 0x33, 0x04, 0x00 };
+    unsigned char _tmp_out_im4p[] = {
+      0x30, 0x36, 0x16, 0x04, 0x49, 0x4d, 0x34, 0x50, 0x16, 0x04, 0x64, 0x74,
+      0x72, 0x65, 0x16, 0x20, 0x45, 0x6d, 0x62, 0x65, 0x64, 0x64, 0x65, 0x64,
+      0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x54, 0x72, 0x65, 0x65, 0x73, 0x2d,
+      0x34, 0x38, 0x31, 0x31, 0x2e, 0x31, 0x30, 0x30, 0x2e, 0x32, 0x36, 0x33,
+      0x04, 0x06, 0x45, 0x4d, 0x50, 0x54, 0x59, 0x0a
+    };
+    unsigned int _tmp_out_im4p_len = 56;
     
-    size_t total;
+    size_t total, sz;
+    unsigned char *buf;
     unsigned char xfer[4096];
-    FHANDLE fd, src = memory_open(O_RDONLY, &base, 50);
+    FHANDLE fd, src = memory_open(O_RDONLY, _tmp_out_im4p, _tmp_out_im4p_len);
     if (!src) {
         return NULL;
     }
-    unsigned char *buf;
     total = src->length(src);
-    fd = memory_open(O_RDWR, binArray, binArraySize);
+//    FHANDLE orig = memory_open(O_RDWR, binArray, binArraySize);
+//    if (orig == NULL) {
+//        src->close(src);
+//        return NULL;
+//    }
+    fd = img4_reopen(memory_open(O_RDWR, binArray, binArraySize), NULL, FLAG_IMG4_SKIP_DECOMPRESSION);
     if (fd) {
         fd->ftruncate(fd, total);
         fd->lseek(fd, 0, SEEK_SET);
@@ -61,16 +74,40 @@ uint8_t* getIM4P(uint8_t* binArray, size_t binArraySize, size_t* outSize){
             total -= written;
         }
         if (total) {
-            int rv = fd->ioctl(fd, IOCTL_MEM_GET_DATAPTR, &buf, outSize);
             fd->close(fd);
             fd = NULL;
-            if (rv) {
-                fprintf(stderr, "wops\n");
-                return NULL;
-            } else {
-                return buf;
-            }
         }
     }
+    src->close(src);
+    int rv = fd->ioctl(fd, IOCTL_MEM_GET_DATAPTR, &buf, &sz);
+    if (rv) {
+        fprintf(stderr, "[e] cannot retrieve data\n");
+    } else {
+        *outSize = sz;
+        return buf;
+    }
     return NULL;
+    
+//    FILE *fp, *fo;
+//    FHANDLE fd, orig = NULL;
+//    unsigned char *buf;
+//    size_t sz;
+//
+//    fp = fopen("/tmp/base.im4p", "w+");
+//    fwrite(_tmp_out_im4p, 1, _tmp_out_im4p_len, fp);
+//    fclose(fp);
+//
+//    fo = fopen("/tmp/data-input.raw", "w+");
+//    fwrite(binArray, 1, binArraySize, fo);
+//    fclose(fp);
+//
+//    fd = replace_img4("/tmp/base.im4p", "/tmp/data-input.raw", &orig);
+//    int rv = orig->ioctl(orig, IOCTL_MEM_GET_DATAPTR, &buf, &sz);
+//    if (rv) {
+//        fprintf(stderr, "[e] cannot retrieve data\n");
+//    } else {
+//        *outSize = sz;
+//        return buf;
+//    }
+//    return NULL;
 }
